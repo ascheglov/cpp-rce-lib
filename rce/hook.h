@@ -64,27 +64,31 @@ DB 0x11 DB 0x11 DB 0x11 DB 0x11 DB 0x11 DB 0x11 DB 0x11 DB 0x11 DB 0x11 DB 0xe1 
 #undef DB
 }}
 
-#pragma pack(push, 1)
-struct MemBlock
+struct global_rwx_memory_pool
 {
-    BYTE mem[28]; // 1 + 15 bytes for copied code, 5 bytes for jmp rel32
-    volatile long used;
+    typedef BYTE MemBlock[24];
+    // In worst case there will be 4 bytes of instructions, followed by 15-bytes instruction
+    // also we have to write "jmp rel32" at end of copied code,
+    // so we have 4 + 15 + 5 = 24 bytes max.
+
+    static const auto NBLOCKS = 1024u;
+    static void* alloc_pool()
+    {
+        if(auto mem = VirtualAlloc(NULL, sizeof(MemBlock) * NBLOCKS, MEM_COMMIT, PAGE_EXECUTE_READWRITE))
+            return mem;
+        __debugbreak(); __assume(0); // see crash dump :)
+    }
+
+    static BYTE* get_rwx_mem()
+    {
+        static auto const first = (MemBlock*)alloc_pool();
+        static volatile long current = 0;
+        auto idx = _InterlockedIncrement(&current) - 1;
+        if(idx < NBLOCKS)
+            return first[idx];
+        __debugbreak(); __assume(0); // see crash dump :)
+    }
 };
-#pragma pack(pop)
-
-inline BYTE* alloc_rwx_mem()
-{
-    const int POOL_SIZE = 0x1000;
-    const int NBLOCKS = POOL_SIZE / sizeof(MemBlock);
-    static auto first = (MemBlock*)VirtualAlloc(NULL, POOL_SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-
-    __assume(first != nullptr);
-    for(auto block = first, last = first + NBLOCKS; block != last; ++block)
-        if(_InterlockedExchange(&block->used, 1) == 0)
-            return block->mem;
-
-    return nullptr;
-}
 
 inline void set_jmp_dest(BYTE* addr, const void* target)
 {
@@ -106,6 +110,13 @@ inline void write_call(BYTE* addr, const void* target)
 {
     addr[0] = 0xE8;
     set_jmp_dest(addr, target);
+}
+
+inline const BYTE* redirect_jmp(BYTE* addr, const void* target)
+{
+    auto dest = get_jmp_dest(addr);
+    set_jmp_dest(addr, target);
+    return dest;
 }
 
 inline void copy_5bytes_to(BYTE* src, BYTE* dst)
@@ -141,13 +152,9 @@ inline void copy_5bytes_to(BYTE* src, BYTE* dst)
 inline const void* splice(BYTE* addr, const void* hookFn)
 {
     if(addr[0] == 0xE9) // jmp rel32
-    {
-        auto dest = get_jmp_dest(addr);
-        set_jmp_dest(addr, hookFn);
-        return dest;
-    }
+        return redirect_jmp(addr, hookFn);
 
-    auto saved = alloc_rwx_mem();
+    auto saved = global_rwx_memory_pool::get_rwx_mem();
     copy_5bytes_to(addr, saved);
 
     write_jmp(addr, hookFn);
