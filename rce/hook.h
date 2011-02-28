@@ -140,7 +140,7 @@ inline void copy_5bytes_to(BYTE* src, BYTE* dst)
 
 inline const void* splice(BYTE* addr, const void* hookFn)
 {
-    if(addr[0] == 0xE8 || addr[0] == 0xE9)
+    if(addr[0] == 0xE9) // jmp rel32
     {
         auto dest = get_jmp_dest(addr);
         set_jmp_dest(addr, hookFn);

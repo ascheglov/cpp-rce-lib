@@ -1,0 +1,4 @@
+glob:Release
+glob:Debug
+glob:_ReSharper.*
+relre:\.(user|suo|sdf|opensdf|ipch)$
