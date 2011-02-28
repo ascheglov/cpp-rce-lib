@@ -1,4 +1,5 @@
 glob:Release
+glob:Release-CLR
 glob:Debug
 glob:_ReSharper.*
 relre:\.(user|suo|sdf|opensdf|ipch)$

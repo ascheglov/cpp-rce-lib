@@ -9,16 +9,21 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
 		Release|Win32 = Release|Win32
+		Release-CLR|Win32 = Release-CLR|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{92266E5B-5721-470C-AE60-302F86E302E4}.Debug|Win32.ActiveCfg = Debug|Win32
 		{92266E5B-5721-470C-AE60-302F86E302E4}.Debug|Win32.Build.0 = Debug|Win32
 		{92266E5B-5721-470C-AE60-302F86E302E4}.Release|Win32.ActiveCfg = Release|Win32
 		{92266E5B-5721-470C-AE60-302F86E302E4}.Release|Win32.Build.0 = Release|Win32
+		{92266E5B-5721-470C-AE60-302F86E302E4}.Release-CLR|Win32.ActiveCfg = Release-CLR|Win32
+		{92266E5B-5721-470C-AE60-302F86E302E4}.Release-CLR|Win32.Build.0 = Release-CLR|Win32
 		{EFDE21BF-051F-4815-B53A-D452257DB353}.Debug|Win32.ActiveCfg = Debug|Win32
 		{EFDE21BF-051F-4815-B53A-D452257DB353}.Debug|Win32.Build.0 = Debug|Win32
 		{EFDE21BF-051F-4815-B53A-D452257DB353}.Release|Win32.ActiveCfg = Release|Win32
 		{EFDE21BF-051F-4815-B53A-D452257DB353}.Release|Win32.Build.0 = Release|Win32
+		{EFDE21BF-051F-4815-B53A-D452257DB353}.Release-CLR|Win32.ActiveCfg = Release-CLR|Win32
+		{EFDE21BF-051F-4815-B53A-D452257DB353}.Release-CLR|Win32.Build.0 = Release-CLR|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
