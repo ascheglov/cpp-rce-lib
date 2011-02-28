@@ -29,7 +29,7 @@ namespace install_uninstall
         return x + 100;
     }
 
-    struct  func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
     {
         static int __stdcall hook(int x)
         {
@@ -68,7 +68,7 @@ namespace five_bytes_length
         __asm ret // :5
     }
 
-    struct  func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
     {
         static char __stdcall hook()
         {
@@ -97,9 +97,9 @@ namespace starts_jmp_rel32
         ret
     } }
 
-    struct  func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
     {
-        static char __stdcall hook()
+        static int __stdcall hook()
         {
             return get_original(hook)() * 3;
         }
@@ -128,9 +128,9 @@ m1:
         ret
     } }
 
-    struct  func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
     {
-        static char __stdcall hook()
+        static int __stdcall hook()
         {
             return get_original(hook)() * 4;
         }
@@ -158,9 +158,9 @@ namespace with_jmp_rel32
         ret
     } }
 
-    struct  func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
     {
-        static char __stdcall hook()
+        static int __stdcall hook()
         {
             return get_original(hook)() * 5;
         }
@@ -190,9 +190,9 @@ m1:
         ret
     } }
 
-    struct  func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
     {
-        static char __stdcall hook()
+        static int __stdcall hook()
         {
             return get_original(hook)() * 6;
         }
@@ -204,5 +204,48 @@ m1:
 
         func_hook::install();
         BOOST_CHECK_EQUAL(func(), 6 * 6);
+    }
+}
+
+//------------------------------------------------------
+// test __thiscall function
+namespace thiscall_wrap
+{
+    __declspec(noinline, naked)
+    int __stdcall func() // emulates `int __thiscall func(int)'
+    { __asm {
+        lea eax, [ecx * 2 + 1] // :4
+        ret // :5
+    } }
+
+    __declspec(naked)
+    int __stdcall call_func(int /*x*/)
+    { __asm {
+        pop eax // return address
+        pop ecx // x
+        push eax // ret addr
+        jmp func
+    } }
+
+    struct func_hook : hook::SpliceThiscall<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    {
+        static int __stdcall hook(int x)
+        {
+            return get_original(hook)(x + 7) * 2;
+        }
+    };
+
+    BOOST_AUTO_TEST_CASE(test_hook_thiscall)
+    {
+        rce::MakeWriteable unlock(&func, 15);
+
+        func_hook::install();
+        BOOST_CHECK_EQUAL(call_func(7), ((7 + 7) * 2 + 1) * 2);
+        func_hook::uninstall();
+        BOOST_CHECK_EQUAL(call_func(8), 8 * 2 + 1);
+        func_hook::install();
+        BOOST_CHECK_EQUAL(call_func(9), ((9 + 7) * 2 + 1) * 2);
+        func_hook::uninstall();
+        BOOST_CHECK_EQUAL(call_func(10), 10 * 2 + 1);
     }
 }
