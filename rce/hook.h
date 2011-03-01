@@ -182,6 +182,11 @@ struct HookBase
     {
         return (T)callAddr;
     }
+
+    static void set_installed(bool state)
+    {
+        state ? derived_t::install() : derived_t::uninstall();
+    }
 };
 template<typename Derived>
 DWORD HookBase<Derived>::callAddr;

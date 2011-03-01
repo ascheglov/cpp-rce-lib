@@ -60,10 +60,10 @@ namespace install_uninstall
     {
         enable_write(&func);
 
-        func_hook::install();
+        func_hook::set_installed(true);
         BOOST_CHECK_EQUAL(func(5), (5 + 2) * 100 + 1);
 
-        func_hook::uninstall();
+        func_hook::set_installed(false);
         BOOST_CHECK_EQUAL(func(6), 6 * 100);
 
         func_hook::install();
@@ -109,9 +109,9 @@ namespace thiscall_wrap
     {
         enable_write(&func);
 
-        func_hook::install();
+        func_hook::set_installed(true);
         BOOST_CHECK_EQUAL(call_func(7), ((7 + 7) * 2 + 1) * 2);
-        func_hook::uninstall();
+        func_hook::set_installed(false);
         BOOST_CHECK_EQUAL(call_func(8), 8 * 2 + 1);
         func_hook::install();
         BOOST_CHECK_EQUAL(call_func(9), ((9 + 7) * 2 + 1) * 2);
