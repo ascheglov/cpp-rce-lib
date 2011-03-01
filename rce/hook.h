@@ -149,15 +149,19 @@ inline void copy_5bytes_to(BYTE* src, BYTE* dst)
     write_jmp(dst, src);
 }
 
+inline void splice(BYTE* addr, const void* hookFn, BYTE* bufSaved)
+{
+    copy_5bytes_to(addr, bufSaved);
+    write_jmp(addr, hookFn);
+}
+
 inline const void* splice(BYTE* addr, const void* hookFn)
 {
     if(addr[0] == 0xE9) // jmp rel32
         return redirect_jmp(addr, hookFn);
 
     auto saved = global_rwx_memory_pool::get_rwx_mem();
-    copy_5bytes_to(addr, saved);
-
-    write_jmp(addr, hookFn);
+    splice(addr, hookFn, saved);
     return saved;
 }
 

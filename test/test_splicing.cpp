@@ -7,169 +7,112 @@
 #include <boost/test/unit_test.hpp>
 
 #include <rce/hook.h>
-#include <rce/memory.h>
 
-//------------------------------------------------------
-// helpers
-template<typename F, F* addr>
-struct local_test_func
+#include <algorithm>
+#include <vector>
+#pragma warning(push)
+#pragma warning(disable: 4512 4244)
+#include <boost/assign/std/vector.hpp>
+#pragma warning(pop)
+
+#include "dump.h"
+
+using namespace boost::assign;
+
+struct SplicingFixture
 {
-    static void* ptr(int /*va*/) { return (void*)addr; }
+    static const auto HOOK_FN_ADDR = 0;
+
+    typedef std::vector<BYTE> vector_t;
+    vector_t expected_;
+    vector_t code_;
+    vector_t saved_;
+
+    SplicingFixture() : expected_(), code_(), saved_(24, 0x55) {}
+
+    vector_t& expected() { return expected_; }
+    vector_t& code() { return code_; }
+
+    // don't add data to code_ after calling this : code_'s data may relocate
+    void expected_write_rel32(int fromEndIdx, int destIdx)
+    {
+        *(int*)&expected_[fromEndIdx - 4] = &code_[destIdx] - &saved_[fromEndIdx];
+    }
+
+    void do_splice()
+    {
+        using namespace hook::detail;
+        splice(&code_[0], (void*)HOOK_FN_ADDR, &saved_[0]);
+    }
+
+    boost::test_tools::predicate_result check() const
+    {
+        vector_t savedCode(saved_.begin(), std::find(saved_.begin(), saved_.end(), 0x55));
+        if(savedCode == expected_)
+            return true;
+
+        boost::test_tools::predicate_result res(false);
+        res.message()
+            << "Saved not expected_ bytes:"
+            << "\n  saved:    " << dump(savedCode)
+            << "\n  expected: " << dump(expected_);
+        return res;
+    }
 };
 
-#define RCE_TEST_LOCAL_FUNC(name) local_test_func<decltype(name), &name>
-
-#pragma managed(push, off)
-//------------------------------------------------------
-// test 5 bytes length function
-namespace five_bytes_length
+BOOST_FIXTURE_TEST_CASE(test_spliced_code, SplicingFixture)
 {
-    __declspec(naked)
-    char __stdcall func()
-    { __asm {
-        nop // :1
-        nop // :2
-        mov al, 21 // :4
-        ret // :5
-    } }
+    code() += 0x90, 0x90, 0x90, 0x90, 0x90, 0x90;
 
-    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
-    {
-        static char __stdcall hook()
-        {
-            return get_original(hook)() * 2;
-        }
-    };
+    do_splice();
 
-    BOOST_AUTO_TEST_CASE(test_hook_5_byte_length)
-    {
-        rce::MakeWriteable unlock(&func, 15);
-
-        func_hook::install();
-        BOOST_CHECK_EQUAL(func(), 21 * 2);
-    }
+    BOOST_CHECK_EQUAL(code_[0], 0xE9);
+    BOOST_CHECK_EQUAL(*(int*)&code_[1], (BYTE*)HOOK_FN_ADDR - &code_[5]);
+    BOOST_CHECK_EQUAL(code_[5], 0x90);
 }
 
-//------------------------------------------------------
-// test function with jmp rel32 at start
-namespace starts_jmp_rel32
+BOOST_FIXTURE_TEST_CASE(test_splice_fn_5_bytes_length, SplicingFixture)
 {
-    __declspec(naked)
-    int __stdcall func()
-    { __asm {
-        _emit 0xE9 __asm _emit 0 __asm _emit 0 __asm _emit 0 __asm _emit 0  // :5
-        mov eax, 3
-        ret
-    } }
+    code() +=
+        0x90, 0x90, 0x90, 0x90, // 0:4
+        0xC3; // 4:5
+    expected() +=
+        0x90, 0x90, 0x90, 0x90, // 0:4
+        0xC3, // 4:5
+        0xE9, 0, 0, 0, 0; // 5:10
+    expected_write_rel32(10, 5);
 
-    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
-    {
-        static int __stdcall hook()
-        {
-            return get_original(hook)() * 3;
-        }
-    };
-
-    BOOST_AUTO_TEST_CASE(test_hook_starts_jmp_rel32)
-    {
-        rce::MakeWriteable unlock(&func, 15);
-
-        func_hook::install();
-        BOOST_CHECK_EQUAL(func(), 3 * 3);
-    }
+    do_splice();
+    BOOST_CHECK(check());
 }
 
-//------------------------------------------------------
-// test function with call rel32 at start
-namespace starts_call_rel32
+BOOST_FIXTURE_TEST_CASE(test_splice_fn_with_call_rel32, SplicingFixture)
 {
-    __declspec(naked)
-    int __stdcall func()
-    { __asm {
-        call m1  // :5
-        mov eax, 4
-        ret
-m1:
-        ret
-    } }
+    code() +=
+        0xE8, 0x01, 0x00, 0x00, 0x00, // 0:5
+        0xC3, // 5:6
+        0xC3; // 6:7
+    expected() +=
+        0xE8, 0, 0, 0, 0, // 0:5
+        0xE9, 0, 0, 0, 0; // 5:10
+    expected_write_rel32(5, 6);
+    expected_write_rel32(10, 5);
 
-    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
-    {
-        static int __stdcall hook()
-        {
-            return get_original(hook)() * 4;
-        }
-    };
-
-    BOOST_AUTO_TEST_CASE(test_hook_starts_call_rel32)
-    {
-        rce::MakeWriteable unlock(&func, 15);
-
-        func_hook::install();
-        BOOST_CHECK_EQUAL(func(), 4 * 4);
-    }
+    do_splice();
+    BOOST_CHECK(check());
 }
 
-//------------------------------------------------------
-// test function with jmp rel32
-namespace with_jmp_rel32
+BOOST_FIXTURE_TEST_CASE(test_splice_fn_with_jmp_rel32, SplicingFixture)
 {
-    __declspec(naked)
-    int __stdcall func()
-    { __asm {
-        mov cl, 1 // :2
-        _emit 0xE9 __asm _emit 0 __asm _emit 0 __asm _emit 0 __asm _emit 0  // :7
-        mov eax, 5
-        ret
-    } }
+    code() +=
+        0x90, // 0:1
+        0xE9, 0x00, 0x00, 0x00, 0x00, // 1:6
+        0xC3; // 6:7
+    expected() +=
+        0x90, // 0:1
+        0xE9, 0, 0, 0, 0; // 1:6
+    expected_write_rel32(6, 6);
 
-    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
-    {
-        static int __stdcall hook()
-        {
-            return get_original(hook)() * 5;
-        }
-    };
-
-    BOOST_AUTO_TEST_CASE(test_hook_with_jmp_rel32)
-    {
-        rce::MakeWriteable unlock(&func, 15);
-
-        func_hook::install();
-        BOOST_CHECK_EQUAL(func(), 5 * 5);
-    }
+    do_splice();
+    BOOST_CHECK(check());
 }
-
-//------------------------------------------------------
-// test function with call rel32
-namespace with_call_rel32
-{
-    __declspec(naked)
-    int __stdcall func()
-    { __asm {
-        mov cl, 1 // :2
-        call m1  // :7
-        mov eax, 6
-        ret
-m1:
-        ret
-    } }
-
-    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
-    {
-        static int __stdcall hook()
-        {
-            return get_original(hook)() * 6;
-        }
-    };
-
-    BOOST_AUTO_TEST_CASE(test_hook_with_call_rel32)
-    {
-        rce::MakeWriteable unlock(&func, 15);
-
-        func_hook::install();
-        BOOST_CHECK_EQUAL(func(), 6 * 6);
-    }
-}
-
-#pragma managed(pop)

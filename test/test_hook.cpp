@@ -7,17 +7,34 @@
 #include <boost/test/unit_test.hpp>
 
 #include <rce/hook.h>
-#include <rce/memory.h>
 
 //------------------------------------------------------
 // helpers
-template<typename F, F* addr>
-struct local_test_func
+
+struct HooksFixture
 {
-    static void* ptr(int /*va*/) { return (void*)addr; }
+    HooksFixture() : funcAddr() {}
+
+    void* funcAddr;
+    DWORD oldProtect;
+
+    void enable_write(void* func)
+    {
+        funcAddr = func;
+        VirtualProtect(funcAddr, 5, PAGE_EXECUTE_READWRITE, &oldProtect);
+    }
+    ~HooksFixture()
+    {
+        if(funcAddr)
+            VirtualProtect(funcAddr, 5, oldProtect, &oldProtect);
+    }
 };
 
-#define RCE_TEST_LOCAL_FUNC(name) local_test_func<decltype(name), &name>
+template<void* addr>
+struct local_test_func
+{
+    static void* ptr(int /*va*/) { return addr; }
+};
 
 //------------------------------------------------------
 // test install/uninstall
@@ -31,7 +48,7 @@ namespace install_uninstall
     }
 #pragma managed(pop)
 
-    struct func_hook : hook::SpliceCodeHook<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, local_test_func<&func>, 0>
     {
         static int __stdcall hook(int x)
         {
@@ -39,9 +56,9 @@ namespace install_uninstall
         }
     };
 
-    BOOST_AUTO_TEST_CASE(test_hook_install_uninstall)
+    BOOST_FIXTURE_TEST_CASE(test_hook_install_uninstall, HooksFixture)
     {
-        rce::MakeWriteable unlock(&func, 15);
+        enable_write(&func);
 
         func_hook::install();
         BOOST_CHECK_EQUAL(func(5), (5 + 2) * 100 + 1);
@@ -79,7 +96,7 @@ namespace thiscall_wrap
     } }
 #pragma managed(pop)
 
-    struct func_hook : hook::SpliceThiscall<func_hook, RCE_TEST_LOCAL_FUNC(func), 0>
+    struct func_hook : hook::SpliceThiscall<func_hook, local_test_func<&func>, 0>
     {
         static int __stdcall hook(int x)
         {
@@ -88,9 +105,9 @@ namespace thiscall_wrap
     };
 
 #pragma managed(push, off)
-    BOOST_AUTO_TEST_CASE(test_hook_thiscall)
+    BOOST_FIXTURE_TEST_CASE(test_hook_thiscall, HooksFixture)
     {
-        rce::MakeWriteable unlock(&func, 15);
+        enable_write(&func);
 
         func_hook::install();
         BOOST_CHECK_EQUAL(call_func(7), ((7 + 7) * 2 + 1) * 2);
@@ -100,6 +117,41 @@ namespace thiscall_wrap
         BOOST_CHECK_EQUAL(call_func(9), ((9 + 7) * 2 + 1) * 2);
         func_hook::uninstall();
         BOOST_CHECK_EQUAL(call_func(10), 10 * 2 + 1);
+    }
+#pragma managed(pop)
+}
+
+//------------------------------------------------------
+// test function with jmp rel32 at start
+// in this case jmp is just redirected to hook
+namespace starts_jmp_rel32
+{
+#pragma managed(push, off)
+    __declspec(naked)
+    int __stdcall func()
+    { __asm {
+        _emit 0xE9 __asm _emit 0 __asm _emit 0 __asm _emit 0 __asm _emit 0  // :5
+        mov eax, 3
+        ret
+    } }
+#pragma managed(pop)
+
+    struct func_hook : hook::SpliceCodeHook<func_hook, local_test_func<&func>, 0>
+    {
+        static int __stdcall hook()
+        {
+            return get_original(hook)() * 3;
+        }
+    };
+
+#pragma managed(push, off)
+    BOOST_FIXTURE_TEST_CASE(test_hook_starts_jmp_rel32, HooksFixture)
+    {
+        enable_write(&func);
+
+        func_hook::install();
+        BOOST_CHECK_EQUAL(func_hook::callAddr, (DWORD)&func + 5);
+        BOOST_CHECK_EQUAL(func(), 3 * 3);
     }
 #pragma managed(pop)
 }
