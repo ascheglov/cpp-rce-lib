@@ -33,7 +33,7 @@ struct HooksFixture
 template<void* addr>
 struct local_test_func
 {
-    static void* ptr(int /*va*/) { return addr; }
+    static void* ptr(int rva) { return (char*)addr + rva; }
 };
 
 //------------------------------------------------------
@@ -152,6 +152,56 @@ namespace starts_jmp_rel32
         func_hook::install();
         BOOST_CHECK_EQUAL(func_hook::callAddr, (DWORD)&func + 5);
         BOOST_CHECK_EQUAL(func(), 3 * 3);
+    }
+#pragma managed(pop)
+}
+
+//------------------------------------------------------
+// test callee hook
+namespace calee_hook
+{
+    int __stdcall func2(int x)
+    {
+        return x * 100;
+    }
+
+#pragma managed(push, off)
+    __declspec(naked)
+    int __stdcall func(int x)
+    { __asm {
+        push ebp // +00
+        mov ebp, esp // +01
+        push x // +03
+        call func2 // +06
+        leave
+        ret 4
+    } }
+#pragma managed(pop)
+
+    struct func_hook : hook::RedirectCallee<func_hook, local_test_func<&func>, 6>
+    {
+        static int __stdcall hook(int x)
+        {
+            return get_original(hook)(x + 2) + 1;
+        }
+    };
+
+#pragma managed(push, off)
+    BOOST_FIXTURE_TEST_CASE(test_hook_callee, HooksFixture)
+    {
+        enable_write(&func);
+
+        func_hook::set_installed(true);
+        BOOST_CHECK_EQUAL(func(5), (5 + 2) * 100 + 1);
+
+        func_hook::set_installed(false);
+        BOOST_CHECK_EQUAL(func(6), 6 * 100);
+
+        func_hook::install();
+        BOOST_CHECK_EQUAL(func(7), (7 + 2) * 100 + 1);
+
+        func_hook::uninstall();
+        BOOST_CHECK_EQUAL(func(8), 8 * 100);
     }
 #pragma managed(pop)
 }

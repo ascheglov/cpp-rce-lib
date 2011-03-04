@@ -258,6 +258,30 @@ __declspec(naked) void SpliceThiscall<Derived, Module, rva>::call_wrap()
     jmp dword ptr[callAddr]
 }}
 
+template<class Derived, class Module, int rva>
+struct RedirectCallee : detail::HookBase<Derived>
+{
+    static void install(const void* hookFn)
+    {
+        auto addr = (BYTE*)Module::ptr(rva);
+#if defined(_DEBUG)
+        if(addr[0] != 0xE8) // call rel32
+            __debugbreak();
+#endif
+        callAddr = (call_addr_t)detail::redirect_jmp(addr, hookFn);
+    }
+
+    static void install()
+    {
+        install(&Derived::hook);
+    }
+
+    static void uninstall()
+    {
+        detail::redirect_jmp((BYTE*)Module::ptr(rva), (void*)callAddr);
+    }
+};
+
 } // namespace hook
 
 #pragma managed(pop)
