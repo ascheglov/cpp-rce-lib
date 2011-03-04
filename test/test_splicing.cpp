@@ -75,7 +75,8 @@ BOOST_FIXTURE_TEST_CASE(test_splice_fn_5_bytes_length, SplicingFixture)
 {
     code() +=
         0x90, 0x90, 0x90, 0x90, // 0:4
-        0xC3; // 4:5
+        0xC3, // 4:5
+        0x55; // added to make index "5" valid
     expected() +=
         0x90, 0x90, 0x90, 0x90, // 0:4
         0xC3, // 4:5
