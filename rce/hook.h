@@ -155,16 +155,6 @@ inline void splice(BYTE* addr, const void* hookFn, BYTE* bufSaved)
     write_jmp(addr, hookFn);
 }
 
-inline const void* splice(BYTE* addr, const void* hookFn)
-{
-    if(addr[0] == 0xE9) // jmp rel32
-        return redirect_jmp(addr, hookFn);
-
-    auto saved = global_rwx_memory_pool::get_rwx_mem();
-    splice(addr, hookFn, saved);
-    return saved;
-}
-
 #pragma warning(push)
 #pragma warning(error: 4440)
 template<typename F> void must_be_stdcall(F*) { typedef F __stdcall* T; }
@@ -175,7 +165,8 @@ struct HookBase
 {
     typedef Derived derived_t;
 
-    static DWORD callAddr;
+    typedef DWORD /* unspecified-type */ call_addr_t;
+    static call_addr_t callAddr;
 
     template<typename T>
     static T get_original(T)
@@ -189,7 +180,7 @@ struct HookBase
     }
 };
 template<typename Derived>
-DWORD HookBase<Derived>::callAddr;
+typename HookBase<Derived>::call_addr_t HookBase<Derived>::callAddr;
 
 } // namespace detail
 
@@ -206,10 +197,25 @@ struct VA
 template<class Derived, class Module, int rva>
 struct SpliceCodeHook : detail::HookBase<Derived>
 {
+    static void install(const void* hookFn)
+    {
+        auto addr = (BYTE*)Module::ptr(rva);
+        if(addr[0] == 0xE9) // jmp rel32
+        {
+            callAddr = (call_addr_t)detail::redirect_jmp(addr, hookFn);
+        }
+        else
+        {
+            callAddr = (call_addr_t)detail::global_rwx_memory_pool::get_rwx_mem();
+            detail::splice(addr, hookFn, (BYTE*)callAddr);
+        }
+    }
+
     static void install()
     {
-        callAddr = (DWORD)detail::splice((BYTE*)Module::ptr(rva), &Derived::hook);
+        install(&Derived::hook);
     }
+
     static void uninstall()
     {
         detail::write_jmp((BYTE*)Module::ptr(rva), (void*)callAddr);
@@ -218,7 +224,7 @@ struct SpliceCodeHook : detail::HookBase<Derived>
 
 // splice __thiscall function
 template<class Derived, class Module, int rva>
-struct SpliceThiscall : detail::HookBase<Derived>
+struct SpliceThiscall : SpliceCodeHook<Derived, Module, rva>
 {
     static void hook_wrap();
 
@@ -227,12 +233,7 @@ struct SpliceThiscall : detail::HookBase<Derived>
 
     static void install()
     {
-        callAddr = (DWORD)detail::splice((BYTE*)Module::ptr(rva), &hook_wrap); // (not the same as SpliceCodeHook::install)
-    }
-
-    static void uninstall()
-    {
-        detail::write_jmp((BYTE*)Module::ptr(rva), (void*)callAddr);
+        SpliceCodeHook::install(&hook_wrap);
     }
 };
 
