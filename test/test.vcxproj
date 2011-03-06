@@ -73,6 +73,12 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <PostBuildEvent>
+      <Command>$(OutDir)$(TargetName).exe --result_code=no --report_level=no</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Testing</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -91,6 +97,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <PostBuildEvent>
+      <Command>$(OutDir)$(TargetName).exe --result_code=no --report_level=no</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Testing</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-CLR|Win32'">
     <ClCompile>
@@ -110,6 +122,12 @@
       <OptimizeReferences>true</OptimizeReferences>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
+    <PostBuildEvent>
+      <Command>$(OutDir)$(TargetName).exe --result_code=no --report_level=no</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Testing</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="test_hook.cpp" />
