@@ -197,9 +197,8 @@ struct VA
 template<class Derived, class Module, int rva>
 struct SpliceCodeHook : detail::HookBase<Derived>
 {
-    static void install(const void* hookFn)
+    static void install(BYTE* addr, const void* hookFn)
     {
-        auto addr = (BYTE*)Module::ptr(rva);
         if(addr[0] == 0xE9) // jmp rel32
         {
             callAddr = (call_addr_t)detail::redirect_jmp(addr, hookFn);
@@ -213,7 +212,7 @@ struct SpliceCodeHook : detail::HookBase<Derived>
 
     static void install()
     {
-        install(&Derived::hook);
+        install((BYTE*)Module::ptr(rva), &Derived::hook);
     }
 
     static void uninstall()
@@ -233,7 +232,7 @@ struct SpliceThiscall : SpliceCodeHook<Derived, Module, rva>
 
     static void install()
     {
-        SpliceCodeHook::install(&hook_wrap);
+        SpliceCodeHook::install((BYTE*)Module::ptr(rva), &hook_wrap);
     }
 };
 
@@ -279,6 +278,35 @@ struct RedirectCallee : detail::HookBase<Derived>
     static void uninstall()
     {
         detail::redirect_jmp((BYTE*)Module::ptr(rva), (void*)callAddr);
+    }
+};
+
+template<class Derived, class Module, int rva>
+struct FnPtrHook : detail::HookBase<Derived>
+{
+    static void install()
+    {
+        auto ptr = (DWORD*)Module::ptr(rva);
+        callAddr = (call_addr_t)*ptr;
+        *ptr = (DWORD)&Derived::hook;
+    }
+
+    static void uninstall()
+    {
+        *(call_addr_t*)Module::ptr(rva) = callAddr;
+    }
+};
+
+template<class Derived, class Module>
+struct SpliceImportByName : SpliceCodeHook<Derived, Module, 0>
+{
+    static void install()
+    {
+        SpliceCodeHook::install((BYTE*)Module::function(Derived::name()), &Derived::hook);
+    }
+    static void uninstall()
+    {
+        detail::write_jmp((BYTE*)Module::function(Derived::name()), (void*)callAddr);
     }
 };
 

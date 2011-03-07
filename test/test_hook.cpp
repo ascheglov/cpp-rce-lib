@@ -205,3 +205,87 @@ namespace calee_hook
     }
 #pragma managed(pop)
 }
+
+//------------------------------------------------------
+// test function ptr hook
+namespace function_ptr_hook
+{
+    int __stdcall func(int x)
+    {
+        return x * 1000;
+    }
+
+    decltype(&func) func_ptr = &func;
+
+    struct func_hook : hook::FnPtrHook<func_hook, local_test_func<&func_ptr>, 0>
+    {
+        static int __stdcall hook(int x)
+        {
+            return get_original(hook)(x + 2) + 1;
+        }
+    };
+
+    BOOST_FIXTURE_TEST_CASE(test_hook_ptr, HooksFixture)
+    {
+        enable_write(&func_ptr);
+
+        func_hook::set_installed(true);
+        BOOST_CHECK_EQUAL(func_ptr(5), (5 + 2) * 1000 + 1);
+
+        func_hook::set_installed(false);
+        BOOST_CHECK_EQUAL(func_ptr(6), 6 * 1000);
+
+        func_hook::install();
+        BOOST_CHECK_EQUAL(func_ptr(7), (7 + 2) * 1000 + 1);
+
+        func_hook::uninstall();
+        BOOST_CHECK_EQUAL(func_ptr(8), 8 * 1000);
+    }
+}
+
+//------------------------------------------------------
+// test imported by name function hook
+namespace imported_by_name_fn_hook
+{
+#pragma managed(push, off)
+    extern "C" __declspec(dllexport, noinline)
+    int __cdecl exported_func(int x)
+    {
+        return x * 200;
+    }
+#pragma managed(pop)
+
+    struct this_module
+    {
+        static void* function(const char* name)
+        {
+            return GetProcAddress(GetModuleHandle(nullptr), name);
+        }
+    };
+
+    struct func_hook : hook::SpliceImportByName<func_hook, this_module>
+    {
+        static const char* name() { return "exported_func"; }
+        static int __cdecl hook(int x)
+        {
+            return get_original(hook)(x + 2) + 1;
+        }
+    };
+
+    BOOST_FIXTURE_TEST_CASE(test_hook_import_by_name, HooksFixture)
+    {
+        enable_write(&exported_func);
+
+        func_hook::set_installed(true);
+        BOOST_CHECK_EQUAL(exported_func(5), (5 + 2) * 200 + 1);
+
+        func_hook::set_installed(false);
+        BOOST_CHECK_EQUAL(exported_func(6), 6 * 200);
+
+        func_hook::install();
+        BOOST_CHECK_EQUAL(exported_func(7), (7 + 2) * 200 + 1);
+
+        func_hook::uninstall();
+        BOOST_CHECK_EQUAL(exported_func(8), 8 * 200);
+    }
+}
