@@ -197,8 +197,14 @@ struct VA
 template<class Derived, class Module, int rva>
 struct SpliceCodeHook : detail::HookBase<Derived>
 {
-    static void install(BYTE* addr, const void* hookFn)
+    static BYTE* hook_addr()
     {
+        return (BYTE*)Module::ptr(rva);
+    }
+
+    static void install(const void* hookFn)
+    {
+        auto addr = Derived::hook_addr();
         if(addr[0] == 0xE9) // jmp rel32
         {
             callAddr = (call_addr_t)detail::redirect_jmp(addr, hookFn);
@@ -212,32 +218,36 @@ struct SpliceCodeHook : detail::HookBase<Derived>
 
     static void install()
     {
-        install((BYTE*)Module::ptr(rva), &Derived::hook);
+        install(&Derived::hook);
     }
 
     static void uninstall()
     {
-        detail::write_jmp((BYTE*)Module::ptr(rva), (void*)callAddr);
+        detail::write_jmp(Derived::hook_addr(), (void*)callAddr);
     }
+};
+
+template<class Derived>
+struct ThiscallWrapMixin
+{
+    template<typename T> static T get_original(T) { return (T)call_wrap; }
+    static void hook_wrap();
+    static void call_wrap();
 };
 
 // splice __thiscall function
 template<class Derived, class Module, int rva>
-struct SpliceThiscall : SpliceCodeHook<Derived, Module, rva>
+struct SpliceThiscall : SpliceCodeHook<Derived, Module, rva>, ThiscallWrapMixin<Derived>
 {
-    static void hook_wrap();
-
-    static void call_wrap();
-    template<typename T> static T get_original(T) { return (T)call_wrap; }
-
+    using ThiscallWrapMixin::get_original;
     static void install()
     {
-        SpliceCodeHook::install((BYTE*)Module::ptr(rva), &hook_wrap);
+        SpliceCodeHook::install(&hook_wrap);
     }
 };
 
-template<class Derived, class Module, int rva>
-__declspec(naked) void SpliceThiscall<Derived, Module, rva>::hook_wrap()
+template<class Derived>
+__declspec(naked) void ThiscallWrapMixin<Derived>::hook_wrap()
 {
     static_assert(!std::is_member_pointer<decltype(&Derived::hook)>::value, "hook() must be static");
     detail::must_be_stdcall(&Derived::hook);
@@ -248,13 +258,13 @@ __declspec(naked) void SpliceThiscall<Derived, Module, rva>::hook_wrap()
         jmp Derived::hook
     }
 }
-template<class Derived, class Module, int rva>
-__declspec(naked) void SpliceThiscall<Derived, Module, rva>::call_wrap()
+template<class Derived>
+__declspec(naked) void ThiscallWrapMixin<Derived>::call_wrap()
 {__asm{
     pop eax // return address
     pop ecx // this
     push eax // return address
-    jmp dword ptr[callAddr]
+    jmp dword ptr[Derived::callAddr]
 }}
 
 template<class Derived, class Module, int rva>
@@ -300,13 +310,9 @@ struct FnPtrHook : detail::HookBase<Derived>
 template<class Derived, class Module>
 struct SpliceImportByName : SpliceCodeHook<Derived, Module, 0>
 {
-    static void install()
+    static BYTE* hook_addr()
     {
-        SpliceCodeHook::install((BYTE*)Module::function(Derived::name()), &Derived::hook);
-    }
-    static void uninstall()
-    {
-        detail::write_jmp((BYTE*)Module::function(Derived::name()), (void*)callAddr);
+        return (BYTE*)Module::function(Derived::name());
     }
 };
 
