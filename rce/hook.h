@@ -178,6 +178,11 @@ struct HookBase
     {
         state ? derived_t::install() : derived_t::uninstall();
     }
+
+    static void* hook_fn()
+    {
+        return (void*)derived_t::hook;
+    }
 };
 template<typename Derived>
 typename HookBase<Derived>::call_addr_t HookBase<Derived>::callAddr;
@@ -201,23 +206,18 @@ struct SpliceCodeHook : detail::HookBase<Derived>
         return (BYTE*)Module::ptr(rva);
     }
 
-    static void install(const void* hookFn)
+    static void install()
     {
         auto addr = Derived::hook_addr();
         if(addr[0] == 0xE9) // jmp rel32
         {
-            callAddr = (call_addr_t)detail::redirect_jmp(addr, hookFn);
+            callAddr = (call_addr_t)detail::redirect_jmp(addr, Derived::hook_fn());
         }
         else
         {
             callAddr = (call_addr_t)detail::global_rwx_memory_pool::get_rwx_mem();
-            detail::splice(addr, hookFn, (BYTE*)callAddr);
+            detail::splice(addr, Derived::hook_fn(), (BYTE*)callAddr);
         }
-    }
-
-    static void install()
-    {
-        install(&Derived::hook);
     }
 
     static void uninstall()
@@ -230,6 +230,7 @@ template<class Derived>
 struct ThiscallWrapMixin
 {
     template<typename T> static T get_original(T) { return (T)call_wrap; }
+    static void* hook_fn() { return (void*)&hook_wrap; }
     static void hook_wrap();
     static void call_wrap();
 };
@@ -239,10 +240,7 @@ template<class Derived, class Module, int rva=0>
 struct SpliceThiscall : SpliceCodeHook<Derived, Module, rva>, ThiscallWrapMixin<Derived>
 {
     using ThiscallWrapMixin::get_original;
-    static void install()
-    {
-        SpliceCodeHook::install(&hook_wrap);
-    }
+    using ThiscallWrapMixin::hook_fn;
 };
 
 template<class Derived>
