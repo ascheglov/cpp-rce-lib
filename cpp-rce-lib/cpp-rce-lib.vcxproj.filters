@@ -5,12 +5,42 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Header Files\detail">
+      <UniqueIdentifier>{0c331dd7-eefa-466e-8327-425d0d8008d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="helpers">
+      <UniqueIdentifier>{3783917f-ec7e-4cc1-b783-968edf75240e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\rce\hook.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\rce\detail\rwx_memory_pool.h">
+      <Filter>Header Files\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\detail\splicing.h">
+      <Filter>Header Files\detail</Filter>
+    </ClInclude>
     <ClInclude Include="..\rce\memory.h">
+      <Filter>helpers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\detail\instructions.h">
+      <Filter>Header Files\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\detail\thiscall_wrap.h">
+      <Filter>Header Files\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\detail\hook_base.h">
+      <Filter>Header Files\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\native_hooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\thiscall_hooks.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
