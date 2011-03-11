@@ -185,16 +185,15 @@ typename HookBase<Derived>::call_addr_t HookBase<Derived>::callAddr;
 } // namespace detail
 
 /* Aux class for hooks by VA
- *
- * Use it as if it's a module
  */
+template<int BASE>
 struct VA
 {
-    static void* ptr(int va) { return (void*)va; }
+    static void* ptr(int va) { return (char*)BASE + va; }
 };
 
 // splice any code
-template<class Derived, class Module, int rva>
+template<class Derived, class Module, int rva=0>
 struct SpliceCodeHook : detail::HookBase<Derived>
 {
     static BYTE* hook_addr()
@@ -236,7 +235,7 @@ struct ThiscallWrapMixin
 };
 
 // splice __thiscall function
-template<class Derived, class Module, int rva>
+template<class Derived, class Module, int rva=0>
 struct SpliceThiscall : SpliceCodeHook<Derived, Module, rva>, ThiscallWrapMixin<Derived>
 {
     using ThiscallWrapMixin::get_original;
@@ -267,7 +266,7 @@ __declspec(naked) void ThiscallWrapMixin<Derived>::call_wrap()
     jmp dword ptr[Derived::callAddr]
 }}
 
-template<class Derived, class Module, int rva>
+template<class Derived, class Module, int rva=0>
 struct RedirectCallee : detail::HookBase<Derived>
 {
     static void install(const void* hookFn)
@@ -291,7 +290,7 @@ struct RedirectCallee : detail::HookBase<Derived>
     }
 };
 
-template<class Derived, class Module, int rva>
+template<class Derived, class Module, int rva=0>
 struct FnPtrHook : detail::HookBase<Derived>
 {
     static void install()
@@ -308,7 +307,7 @@ struct FnPtrHook : detail::HookBase<Derived>
 };
 
 template<class Derived, class Module>
-struct SpliceImportByName : SpliceCodeHook<Derived, Module, 0>
+struct SpliceImportByName : SpliceCodeHook<Derived, Module>
 {
     static BYTE* hook_addr()
     {
