@@ -18,7 +18,7 @@ namespace thiscall_splicing
     __declspec(naked)
     int __stdcall func() // emulates `int __thiscall func(int)'
     { __asm {
-        lea eax, [ecx * 2 + 1] // :4
+        lea eax, [ecx + ecx + 1] // :4
         ret // :5
     } }
 

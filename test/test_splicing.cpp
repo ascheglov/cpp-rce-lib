@@ -6,7 +6,7 @@
  */
 #include <boost/test/unit_test.hpp>
 
-#include <rce/hook.h>
+#include <rce/detail/splicing.h>
 
 #include <algorithm>
 #include <vector>
@@ -41,8 +41,7 @@ struct SplicingFixture
 
     void do_splice()
     {
-        using namespace hook::detail;
-        splice(&code_[0], (void*)HOOK_FN_ADDR, &saved_[0]);
+        hook::detail::splice(&code_[0], (void*)HOOK_FN_ADDR, &saved_[0]);
     }
 
     boost::test_tools::predicate_result check() const
