@@ -130,12 +130,14 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="test_hook.cpp" />
+    <ClCompile Include="test_native_hooks.cpp" />
     <ClCompile Include="test_main.cpp" />
     <ClCompile Include="test_splicing.cpp" />
+    <ClCompile Include="test_thiscall_hooks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dump.h" />
+    <ClInclude Include="hooks_fixture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

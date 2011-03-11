@@ -1,3 +1,7 @@
+/* C++ RCE Library
+ * http://code.google.com/p/cpp-rce-lib/
+ * (c) 2010 Abyx. MIT License.
+ */
 #pragma once
 
 #include <string>
