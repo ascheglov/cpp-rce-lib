@@ -49,19 +49,14 @@ struct SpliceCodeHook : detail::HookBase<Derived>
 template<class Derived, class Module, int rva=0>
 struct RedirectCallee : detail::HookBase<Derived>
 {
-    static void install(const void* hookFn)
+    static void install()
     {
         auto addr = (BYTE*)Module::ptr(rva);
 #if defined(_DEBUG)
         if(addr[0] != 0xE8) // call rel32
             __debugbreak();
 #endif
-        callAddr = (call_addr_t)detail::redirect_jmp(addr, hookFn);
-    }
-
-    static void install()
-    {
-        install(&Derived::hook);
+        callAddr = (call_addr_t)detail::redirect_jmp(addr, Derived::hook_fn());
     }
 
     static void uninstall()
@@ -75,9 +70,9 @@ struct FnPtrHook : detail::HookBase<Derived>
 {
     static void install()
     {
-        auto ptr = (DWORD*)Module::ptr(rva);
+        auto ptr = (void**)Module::ptr(rva);
         callAddr = (call_addr_t)*ptr;
-        *ptr = (DWORD)&Derived::hook;
+        *ptr = Derived::hook_fn();
     }
 
     static void uninstall()
