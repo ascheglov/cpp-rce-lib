@@ -12,7 +12,7 @@
 
 //------------------------------------------------------
 // test __thiscall function splicing
-namespace splicing
+namespace thiscall_splicing
 {
 #pragma managed(push, off)
     __declspec(naked)
