@@ -22,6 +22,27 @@ struct SpliceThiscall : SpliceCodeHook<Derived, Module, rva>, detail::ThiscallWr
     using ThiscallWrapMixin::hook_fn;
 };
 
+template<class Derived, class Module, int rva=0>
+struct RedirectThiscall : RedirectCallee<Derived, Module, rva>, detail::ThiscallWrapMixin<Derived>
+{
+    using ThiscallWrapMixin::get_original;
+    using ThiscallWrapMixin::hook_fn;
+};
+
+template<class Derived, class Module, int rva=0>
+struct ThiscallPtrHook : FnPtrHook<Derived, Module, rva>, detail::ThiscallWrapMixin<Derived>
+{
+    using ThiscallWrapMixin::get_original;
+    using ThiscallWrapMixin::hook_fn;
+};
+
+template<class Derived, class Module>
+struct SpliceThiscallByName : SpliceImportByName<Derived, Module>, detail::ThiscallWrapMixin<Derived>
+{
+    using ThiscallWrapMixin::get_original;
+    using ThiscallWrapMixin::hook_fn;
+};
+
 } // namespace hook
 
 #pragma managed(pop)
