@@ -85,7 +85,7 @@ namespace starts_jmp_rel32
 
 //------------------------------------------------------
 // test callee hook
-namespace calee_hook
+namespace callee_hook
 {
     int __stdcall func2(int x)
     {
@@ -116,7 +116,7 @@ namespace calee_hook
 #pragma managed(push, off)
     BOOST_FIXTURE_TEST_CASE(test_hook_callee, HooksFixture)
     {
-        enable_write(&func);
+        enable_write((char*)&func + 6);
 
         func_hook::set_installed(true);
         BOOST_CHECK_EQUAL(func(5), (5 + 2) * 100 + 1);
