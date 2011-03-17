@@ -16,13 +16,13 @@ namespace detail {
 // compile-time checker
 #pragma warning(push)
 #pragma warning(error: 4440)
-template<typename F> void must_be_stdcall(F*) { typedef F __stdcall* T; }
+template<typename F> inline void must_be_stdcall(F*) { typedef F __stdcall* T; }
 #pragma warning(pop)
 
 template<class Derived>
 struct ThiscallWrapMixin
 {
-    template<typename T> static T get_original(T) { return (T)call_wrap; }
+    template<typename T> static T get_original(T) { return (T)(void*)call_wrap; }
     static void* hook_fn() { return (void*)&hook_wrap; }
     static void hook_wrap();
     static void call_wrap();
