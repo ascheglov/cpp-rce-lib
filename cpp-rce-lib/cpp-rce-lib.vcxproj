@@ -20,10 +20,12 @@
     <ClInclude Include="..\rce\detail\rwx_memory_pool.h" />
     <ClInclude Include="..\rce\detail\splicing.h" />
     <ClInclude Include="..\rce\detail\thiscall_wrap.h" />
+    <ClInclude Include="..\rce\detail\types.h" />
     <ClInclude Include="..\rce\helpers.h" />
     <ClInclude Include="..\rce\hook.h" />
     <ClInclude Include="..\rce\memory.h" />
     <ClInclude Include="..\rce\native_hooks.h" />
+    <ClInclude Include="..\rce\patching.h" />
     <ClInclude Include="..\rce\thiscall_hooks.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

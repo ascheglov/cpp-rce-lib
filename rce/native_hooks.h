@@ -6,10 +6,8 @@
  */
 #pragma once
 
-#include <Windows.h> // TODO: remove it
-
-#include "detail/instructions.h"
-#include "detail/splicing.h"
+#include "patching.h"
+#include "detail/types.h"
 #include "detail/rwx_memory_pool.h"
 #include "detail/hook_base.h"
 
@@ -21,28 +19,28 @@ namespace hook {
 template<class Derived, class Module, int rva=0>
 struct SpliceCodeHook : detail::HookBase<Derived>
 {
-    static BYTE* hook_addr()
+    static void* hook_addr()
     {
-        return (BYTE*)Module::ptr(rva);
+        return Module::ptr(rva);
     }
 
     static void install()
     {
-        auto addr = Derived::hook_addr();
+        auto addr = (detail::BYTE*)Derived::hook_addr();
         if(addr[0] == 0xE9) // jmp rel32
         {
-            callAddr = (call_addr_t)detail::redirect_jmp(addr, Derived::hook_fn());
+            callAddr = (call_addr_t)redirect_call_or_jmp(addr, Derived::hook_fn());
         }
         else
         {
             callAddr = (call_addr_t)detail::global_rwx_memory_pool::get_rwx_mem();
-            detail::splice(addr, Derived::hook_fn(), (BYTE*)callAddr);
+            splice(addr, Derived::hook_fn(), (void*)callAddr);
         }
     }
 
     static void uninstall()
     {
-        detail::write_jmp(Derived::hook_addr(), (void*)callAddr);
+        write_jmp(Derived::hook_addr(), (void*)callAddr);
     }
 };
 
@@ -51,17 +49,17 @@ struct RedirectCallee : detail::HookBase<Derived>
 {
     static void install()
     {
-        auto addr = (BYTE*)Module::ptr(rva);
+        auto addr = (detail::BYTE*)Module::ptr(rva);
 #if defined(_DEBUG)
         if(addr[0] != 0xE8) // call rel32
             __debugbreak();
 #endif
-        callAddr = (call_addr_t)detail::redirect_jmp(addr, Derived::hook_fn());
+        callAddr = (call_addr_t)redirect_call_or_jmp(addr, Derived::hook_fn());
     }
 
     static void uninstall()
     {
-        detail::redirect_jmp((BYTE*)Module::ptr(rva), (void*)callAddr);
+        redirect_call_or_jmp(Module::ptr(rva), (void*)callAddr);
     }
 };
 
@@ -84,9 +82,9 @@ struct FnPtrHook : detail::HookBase<Derived>
 template<class Derived, class Module>
 struct SpliceImportByName : SpliceCodeHook<Derived, Module>
 {
-    static BYTE* hook_addr()
+    static void* hook_addr()
     {
-        return (BYTE*)Module::function(Derived::name());
+        return Module::function(Derived::name());
     }
 };
 

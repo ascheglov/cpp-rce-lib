@@ -6,9 +6,12 @@
  */
 #pragma once
 
-#include <Windows.h> // TODO: remove it
-
+#include "types.h"
 #include "instructions.h"
+
+#include <memory>
+// extern "C" void* __cdecl memcpy(void* dst, const void* src, size_t count);
+// #pragma intrinsic(memcpy)
 
 #pragma managed(push, off)
 

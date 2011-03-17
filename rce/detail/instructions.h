@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include <Windows.h> // TODO: remove it
+#include "types.h"
 
 #pragma managed(push, off)
 

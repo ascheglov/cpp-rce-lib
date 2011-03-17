@@ -43,5 +43,11 @@
     <ClInclude Include="..\rce\helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\rce\detail\types.h">
+      <Filter>Header Files\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\rce\patching.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

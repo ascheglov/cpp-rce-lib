@@ -4,12 +4,12 @@
  *
  * Tests for native_hooks.h
  */
+#include <rce/native_hooks.h>
+
 #pragma warning(push)
 #pragma warning(disable: 4265 4619 4548)
 #include <boost/test/unit_test.hpp>
 #pragma warning(pop)
-
-#include <rce/native_hooks.h>
 
 #include "hooks_fixture.h"
 

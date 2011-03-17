@@ -4,12 +4,12 @@
  *
  * Splicing tests
  */
+#include <rce/detail/splicing.h>
+
 #pragma warning(push)
 #pragma warning(disable: 4265 4619 4548)
 #include <boost/test/unit_test.hpp>
 #pragma warning(pop)
-
-#include <rce/detail/splicing.h>
 
 #include <algorithm>
 #include <vector>
@@ -27,7 +27,7 @@ struct SplicingFixture
 {
     static const auto HOOK_FN_ADDR = 0;
 
-    typedef std::vector<BYTE> vector_t;
+    typedef std::vector<unsigned char> vector_t;
     vector_t expected_;
     vector_t code_;
     vector_t saved_;
@@ -70,7 +70,7 @@ BOOST_FIXTURE_TEST_CASE(test_spliced_code, SplicingFixture)
     do_splice();
 
     BOOST_CHECK_EQUAL(code_[0], 0xE9);
-    BOOST_CHECK_EQUAL(*(int*)&code_[1], (BYTE*)HOOK_FN_ADDR - &code_[5]);
+    BOOST_CHECK_EQUAL(*(int*)&code_[1], (unsigned char*)HOOK_FN_ADDR - &code_[5]);
     BOOST_CHECK_EQUAL(code_[5], 0x90);
 }
 

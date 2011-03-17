@@ -6,8 +6,14 @@
  */
 #pragma once
 
-#include <intrin.h>
 #include <Windows.h> // TODO: remove it
+// extern "C" __declspec(dllimport)
+//     void* __stdcall VirtualAlloc(
+//     void* lpAddress, size_t dwSize, unsigned long flAllocationType, unsigned long flProtect);
+
+#include <intrin.h>
+// extern "C" long _InterlockedIncrement(long volatile *);
+// #pragma intrinsic(_InterlockedIncrement)
 
 #pragma managed(push, off)
 
@@ -24,8 +30,16 @@ struct global_rwx_memory_pool
     static const auto NBLOCKS = 1024u;
     static void* alloc_pool()
     {
-        if(auto mem = VirtualAlloc(NULL, sizeof(MemBlock) * NBLOCKS, MEM_COMMIT, PAGE_EXECUTE_READWRITE))
+        auto mem = VirtualAlloc(
+            nullptr,
+            sizeof(MemBlock) * NBLOCKS,
+            0x1000 /*MEM_COMMIT*/,
+            0x40 /*PAGE_EXECUTE_READWRITE*/
+            );
+
+        if(mem)
             return mem;
+
         __debugbreak(); __assume(0); // see crash dump :)
     }
 

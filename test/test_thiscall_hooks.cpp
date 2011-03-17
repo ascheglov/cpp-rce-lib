@@ -4,12 +4,12 @@
  *
  * Tests for thiscall_hooks.h
  */
+#include <rce/thiscall_hooks.h>
+
 #pragma warning(push)
 #pragma warning(disable: 4265 4619 4548)
 #include <boost/test/unit_test.hpp>
 #pragma warning(pop)
-
-#include <rce/thiscall_hooks.h>
 
 #include "hooks_fixture.h"
 
