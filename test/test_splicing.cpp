@@ -4,14 +4,18 @@
  *
  * Splicing tests
  */
+#pragma warning(push)
+#pragma warning(disable: 4265 4619 4548)
 #include <boost/test/unit_test.hpp>
+#pragma warning(pop)
 
 #include <rce/detail/splicing.h>
 
 #include <algorithm>
 #include <vector>
+
 #pragma warning(push)
-#pragma warning(disable: 4512 4244)
+#pragma warning(disable: 4242 4244 4512)
 #include <boost/assign/std/vector.hpp>
 #pragma warning(pop)
 
