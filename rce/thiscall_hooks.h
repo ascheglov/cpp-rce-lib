@@ -1,6 +1,6 @@
 /* C++ RCE Library
  * http://code.google.com/p/cpp-rce-lib/
- * (c) 2010 Abyx. MIT License.
+ * (c) 2010-2011 Abyx. MIT License.
  *
  * Classes for hooking __thiscall functions from native code,
  * compatible with /clr compiler option.
