@@ -51,7 +51,7 @@ namespace thiscall_splicing
     } }
 #pragma managed(pop)
 
-    struct func_hook : hook::SpliceThiscall<func_hook, local_test_func<&func>, 0>
+    struct func_hook : hook::ThiscallWrap<hook::SpliceCodeHook, func_hook, local_test_func<&func>>
     {
         static int __stdcall hook(int x)
         {
@@ -100,7 +100,7 @@ namespace redirect_thiscall_hook
     } }
 #pragma managed(pop)
 
-    struct func_hook : hook::RedirectThiscall<func_hook, local_test_func<&func>, 6>
+    struct func_hook : hook::ThiscallWrap<hook::RedirectCallee, func_hook, local_test_func<&func, 6>>
     {
         static int __stdcall hook(int x)
         {
@@ -143,7 +143,7 @@ namespace thiscall_ptr_hook
 
     decltype(&func) func_ptr = &func;
 
-    struct func_hook : hook::ThiscallPtrHook<func_hook, local_test_func<&func_ptr>, 0>
+    struct func_hook : hook::ThiscallWrap<hook::FnPtrHook, func_hook, local_test_func<&func_ptr>>
     {
         static int __stdcall hook(int x)
         {
@@ -192,7 +192,7 @@ namespace imported_by_name_thiscall_fn_hook
         }
     };
 
-    struct func_hook : hook::SpliceThiscallByName<func_hook, this_module>
+    struct func_hook : hook::ThiscallWrap<hook::SpliceImportByName, func_hook, this_module>
     {
         static const char* name() { return "_exported_thiscall_func@4"; }
         static int __stdcall hook(int x)

@@ -79,7 +79,7 @@ struct FnPtrHook : detail::HookBase<Derived>
     }
 };
 
-template<class Derived, class Module>
+template<class Derived, class Module, int unused=0>
 struct SpliceImportByName : SpliceCodeHook<Derived, Module>
 {
     static void* hook_addr()

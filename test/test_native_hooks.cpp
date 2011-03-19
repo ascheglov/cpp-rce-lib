@@ -66,7 +66,7 @@ namespace starts_jmp_rel32
     } }
 #pragma managed(pop)
 
-    struct func_hook : hook::SpliceCodeHook<func_hook, local_test_func<&func>, 0>
+    struct func_hook : hook::SpliceCodeHook<func_hook, local_test_func<&func>>
     {
         static int __stdcall hook()
         {
@@ -108,7 +108,7 @@ namespace callee_hook
     } }
 #pragma managed(pop)
 
-    struct func_hook : hook::RedirectCallee<func_hook, local_test_func<&func>, 6>
+    struct func_hook : hook::RedirectCallee<func_hook, local_test_func<&func, 6>>
     {
         static int __stdcall hook(int x)
         {
@@ -147,7 +147,7 @@ namespace function_ptr_hook
 
     decltype(&func) func_ptr = &func;
 
-    struct func_hook : hook::FnPtrHook<func_hook, local_test_func<&func_ptr>, 0>
+    struct func_hook : hook::FnPtrHook<func_hook, local_test_func<&func_ptr>>
     {
         static int __stdcall hook(int x)
         {

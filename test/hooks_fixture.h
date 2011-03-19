@@ -25,8 +25,8 @@ struct HooksFixture
     }
 };
 
-template<void* addr>
+template<void* addr, int offset = 0>
 struct local_test_func
 {
-    static void* ptr(int rva) { return (char*)addr + rva; }
+    static void* ptr(int /*rva*/) { return (char*)addr + offset; }
 };
