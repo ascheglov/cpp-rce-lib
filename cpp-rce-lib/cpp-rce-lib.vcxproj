@@ -28,6 +28,9 @@
     <ClInclude Include="..\rce\patching.h" />
     <ClInclude Include="..\rce\thiscall_hooks.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\readme.txt" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{92266E5B-5721-470C-AE60-302F86E302E4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
